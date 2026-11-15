@@ -12,7 +12,8 @@ The project explores how an employee assistant can answer questions from the Git
 - **Handbook corpus:** verified 522 distinct source documents from a [pinned GitLab Handbook revision](https://gitlab.com/gitlab-com/content-sites/handbook/-/tree/8fce82673398dbfad74c667e7b35eb75d101d55d). The inventory records URLs, source paths, revision, checksums, and attribution. The handbook is [CC BY-SA 4.0](https://handbook.gitlab.com/handbook/about/handbook-usage/#external-use-of-the-handbook).
 - **Evaluation:** froze 80 cases (82 turns) with reference answers, pass criteria, and 173 evidence excerpts checked against exact source lines. Categories cover expenses, learning, onboarding, multiple documents, and missing or unsupported requests.
 - **Prompting baseline:** verified chat access and captured all 246 planned responses using the three prompts below. The embeddings endpoint was checked separately. All 246 responses were scored against the frozen rubric.
-- **Next:** build hybrid handbook retrieval and reranking, then compare against this baseline. The planned tool and agent layers come after retrieval. Submission is scheduled for 27 November 2026.
+- **Retrieval and RAG:** indexed all 522 documents, compared four search methods on the frozen set, and scored 82 cited responses.
+- **Next:** improve passage selection and test narrower checks for clarification and external actions. The planner, executor, critic, and tools are still planned. Submission is scheduled for 27 November 2026.
 
 ## Closed-book prompting baseline
 
@@ -47,25 +48,65 @@ The endpoint reported token counts. No monetary cost is reported because no veri
 - **Private claim status (EVAL-071):** all three prompts said they could not access the private report. The few-shot and decomposition prompts suggested a self-service or support route and passed this case. The direct prompt asked for claim details despite having no access and was graded partial.
 - **Clarification (EVAL-072):** the prompts asked for cost or policy information, but none asked for the employee's hire date or allowance type, which the reference answer identifies as material.
 
+## Retrieval and grounded answers
+
+The retriever splits the pinned handbook into heading-based passages with permanent source citations. The selected profile produced **9,211 passages from 522 documents**. The tokenizer verified a maximum of **407 tokens per passage** against the 512-token limit. The course BGE model generates 384-dimensional embeddings. BM25 and semantic search each nominate up to 30 passages; reciprocal rank fusion combines their lists, and a local second pass reranks the candidates. The answer run used the top five reranked passages.
+
+| Retrieval method | Document recall@5 | Evidence span recall@5 |
+|---|---:|---:|
+| BM25 | 81.7% | 41.8% |
+| Semantic | 89.0% | 49.6% |
+| Rank fusion | 88.4% | 48.8% |
+| Rank fusion + local reranker | 86.2% | 48.1% |
+
+Recall is averaged across the 82 frozen turns. Document recall checks which required documents appear; evidence span recall checks whether the chunks cover each annotated span's content-bearing lines, excluding blank lines, headings, and removed markup. Semantic search had the highest measured evidence recall at five; the reranker did not improve that metric. At ten passages, rank fusion led on evidence span recall (64.4%), before accounting for the extra context it would add to an answer request.
+
+| Answer setup | Turns passed | Cases passed | Answer turns | Clarification turns | Refusal turns |
+|---|---:|---:|---:|---:|---:|
+| Best closed-book prompt | 4/82 | 4/80 | 0/66 | 1/8 | 3/8 |
+| RAG with citations | 20/82 | 19/80 | 20/66 | 0/8 | 0/8 |
+
+Both runs used the same chat model and frozen evaluation set. RAG used an evidence-aware prompt and supplied retrieved passages. Reference answers and scoring criteria stayed offline. The average RAG chat request took **3.05 s**, excluding retrieval; the endpoint reported **128,123 input tokens and 9,936 output tokens** over the run. These are single-review scores. A resolvable citation indicates which passage was referenced; it does not prove the passage supports the answer.
+
+- **Worked:** the cited [gift-card reimbursement rule](https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L64-68) changed the answer from $180 to $150 after a $30 gift card.
+- **Retrieval miss:** the new-hire equipment question surfaced the existing-employee allowance without the rule for new hires.
+- **Interpretation error:** the model retrieved the tuition repayment rule but treated the $1,000 threshold as a deductible.
+
+### Development trial
+
+We tried two changes on eight separate development cases. Adding up to three neighbouring passages left coverage at **10/11 annotated evidence points** and raised input token use by **52%**. An answer/clarify/decline gate chose the expected action in **3/8 cases**: it declined both requests to act in private systems, but blocked three valid policy questions and missed both clarification cases. Neither change is enabled in the evaluated RAG workflow.
+
 ## Project files
 
 | File | Purpose |
 |---|---|
-| `abc.md` | Architecture, scope, and project timeline. |
-| `data/handbook/` and `data/handbook-inventory.jsonl` | Pinned Markdown snapshot and document catalogue. |
-| `data/evaluation-set/evaluation.jsonl` | Frozen questions, reference answers, and scoring evidence. Batch files preserve the eight review groups. |
-| `baseline/run.py` | Runs one smoke test or the full baseline with verified TLS; supports resuming from a compatible partial run. |
-| `baseline/prompts.json` | Direct, few-shot, and decomposition prompt definitions. |
-| `results/closed-book.jsonl` | Recorded model replies, timing, token usage, and run settings for each strategy, case, and turn. |
-| `results/baseline-scores.jsonl` | Rubric verdict and reason for each recorded response. |
+| [baseline/run.py](baseline/run.py) and [prompts.json](baseline/prompts.json) | Run the three closed-book prompts and record replies, timing, and token use. |
+| [Closed-book replies](results/closed-book.jsonl) and [scorecard](results/baseline-scores.jsonl) | Inspect baseline model output and turn-level verdicts. |
+| [chunk_handbook.py](retrieval/chunk_handbook.py) and [build_embeddings.py](retrieval/build_embeddings.py) | Prepare citable passages and build or resume the SQLite vector index. |
+| [search_bm25.py](retrieval/search_bm25.py), [search_semantic.py](retrieval/search_semantic.py), and [search_hybrid.py](retrieval/search_hybrid.py) | Compare keyword, vector, and combined retrieval. |
+| [evaluate_rag.py](retrieval/evaluate_rag.py) | Measure retrieval separately from cited answers on the frozen set. |
+| [trial_rag_improvements.py](retrieval/trial_rag_improvements.py) | Reproduce the separate eight-case development trial. |
 
-The baseline runner, prompts, responses, and scorecard are in this repository. The pinned handbook and held-out evaluation records stay in the team’s local working directory.
+The pinned handbook, its inventory, the SQLite index, the frozen question and answer set, and the per-case RAG and development results stay in the team’s working directory. A fresh clone requires the team’s local inputs to reproduce the runs.
 
-To reproduce from that directory, provide the course-assigned chat base URL and CA certificate. The runner prompts for the API key without echoing it, or reads `CAPSTONE_CHAT_API_KEY` from the environment.
+## Reproduce locally
 
-```sh
-python3 baseline/run.py --base-url "$CAPSTONE_CHAT_BASE_URL" \
-  --ca "$CAPSTONE_CHAT_CA" --smoke-only --output results/smoke.jsonl
+Use Python 3.11 or later. From the repository root, place the pinned Markdown in `data/handbook/`, the matching inventory at `data/handbook-inventory.jsonl`, and the frozen cases at `data/evaluation-set/evaluation.jsonl`.
+
+Create a Python environment and install `tokenizers==0.22.2` for semantic search. The embedding scripts download the pinned public BGE tokenizer, or accept a matching local copy via `--tokenizer`. Set `CAPSTONE_EMBED_BASE_URL`, `CAPSTONE_EMBED_CA`, `CAPSTONE_CHAT_BASE_URL`, and `CAPSTONE_CHAT_CA` using your assigned course settings. The scripts prompt for keys without echoing them, or read `CAPSTONE_EMBED_API_KEY` and `CAPSTONE_CHAT_API_KEY` from the environment.
+
+```
+# Closed-book smoke check
+python3 -B baseline/run.py --smoke-only --output results/smoke.jsonl
+
+# Build or resume the embedding index, then search
+python3 -B retrieval/build_embeddings.py
+python3 -B retrieval/search_hybrid.py "How should I handle a lost expense receipt?"
+
+# Evaluate retrieval and generate cited answers
+python3 -B retrieval/evaluate_rag.py retrieve
+python3 -B retrieval/evaluate_rag.py report
+python3 -B retrieval/evaluate_rag.py answer
 ```
 
-To run all cases, remove `--smoke-only` and choose a new output file. To reuse the smoke-test responses, add `--resume-from results/smoke.jsonl`. Keep keys, certificates, and environment files out of version control.
+Use a new results filename for a fresh retrieval run; the answer stage resumes only when the prior results match its inputs. To run the full closed-book baseline, omit `--smoke-only` and choose a new output path. Keep course credentials, certificates, and access archives outside the repository.
