@@ -5,7 +5,7 @@ import json
 import re
 
 from .equipment import expense_calculator, request_draft
-from .handbook import REQUIRED_CITATIONS
+from .handbook import REQUIRED_CITATIONS, missing_receipt_source
 from .store import ConcurrentUpdate, RateLimited, checked_session
 from .telemetry import MAX_STEPS, StepLimit, Trace
 
@@ -172,6 +172,14 @@ class Copilot:
                 if not sources:
                     return {"status": "unverified", "message": "I could not find relevant public handbook evidence."}
             if self.chat is None:
+                affidavit = missing_receipt_source(query, sources)
+                if affidavit:
+                    return {
+                        "status": "complete",
+                        "answer_origin": "prepared",
+                        "message": "Make a copy of the Missing Receipt Affidavit, fill it out, and attach it as a PDF when you submit the expense.",
+                        "sources": [affidavit],
+                    }
                 return {"status": "evidence", "message": "Matching passages from the demo handbook index.", "sources": sources}
 
             from evaluate_rag import CITE, MAX_TOKENS, PROMPT
@@ -197,7 +205,7 @@ class Copilot:
                 if (input_tokens is not None and output_tokens is not None
                         and input_tokens + output_tokens > 8192):
                     raise StepLimit("Reported token usage exceeded the budget.")
-            return {"status": "complete", "message": answer, "sources": [
+            return {"status": "complete", "answer_origin": "course_model", "message": answer, "sources": [
                 {**labelled[ref], "title": f"[{ref}] {labelled[ref]['title']}"} for ref in refs
             ]}
 
