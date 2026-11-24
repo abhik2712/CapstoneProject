@@ -62,21 +62,37 @@ operation, outcome, retries, latency, and reported model token counts when
 available. They omit free-text questions and draft text. Set
 `CAPSTONE_OTEL_CONSOLE=1` to export OpenTelemetry spans to stderr.
 
-### Course-endpoint mode
+### Handbook answers and the course model
 
-The equipment workflow uses the same fixed, citable handbook passages in
-both modes. With `CAPSTONE_MODE=live`, general handbook questions use the
-project's hybrid index and the assigned model to produce cited answers.
-The critic requires citation IDs from the retrieved evidence. Citation
-validity alone does not establish that each claim is supported.
+The default offline demo uses the bundled handbook passages. It gives a
+prepared, cited answer to “What should I attach if I lost a receipt?” and
+shows matching sources for other supported searches.
 
-Set the course API URLs, keys, and CA certificate paths listed under
+To generate answers with the course model using the bundled passages, set
+the assigned `CAPSTONE_CHAT_BASE_URL` (the HTTPS URL ending in `/v1`),
+`CAPSTONE_CHAT_CA` (the CA certificate path), and `CAPSTONE_CHAT_API_KEY`.
+Then start Streamlit in chat mode:
+
+```sh
+CAPSTONE_MODE=chat .venv/bin/python -m streamlit run streamlit_app.py
+```
+
+The same mode is available in the CLI:
+
+```sh
+python -m copilot --mode chat policy demo "What should I attach if I lost a receipt?"
+```
+
+Use `CAPSTONE_MODE=live` for the full handbook. This mode also needs the
+embeddings settings and hybrid index described under
 [Reproduce locally](#reproduce-locally). Use `CAPSTONE_INDEX` to override
-`data/handbook-embeddings.sqlite`, or `CAPSTONE_TOKENIZER` to use an
+`data/handbook-embeddings.sqlite` and `CAPSTONE_TOKENIZER` to use an
 existing pinned tokenizer. `CAPSTONE_EMBED_ACCESS_ZIP` can supply the
-embedding settings from the course archive. In the default demo mode,
-the handbook search displays passages from the small bundled BM25 index
-and runs without credentials.
+embedding settings from the course archive.
+
+Both generation modes use the assigned model and require citation IDs
+from the retrieved evidence. The equipment workflow uses the same pinned
+policy passages in every mode.
 
 ### Check the implementation
 

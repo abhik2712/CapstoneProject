@@ -8,6 +8,11 @@ from copilot.equipment import ALLOWANCES, ITEMS
 from copilot.runtime import build_copilot, settings
 
 ALLOWANCE_LABELS = {"new_hire": "New-hire stipend", "annual_refresh": "Annual equipment refresh"}
+MODE_LABELS = {
+    "demo": "Offline handbook demo",
+    "chat": "Course model · Sample handbook",
+    "live": "Course model · Full handbook",
+}
 
 st.set_page_config(page_title="Employee Operations Copilot", page_icon="📘", layout="wide")
 
@@ -20,7 +25,10 @@ def open_copilot(path, mode, telemetry):
 config = settings()
 try:
     agent = open_copilot(**config)
-except (OSError, ValueError, RuntimeError):
+except ValueError as exc:
+    st.error(str(exc))
+    st.stop()
+except (OSError, RuntimeError):
     st.error("The copilot could not start. Check the index and course settings in the README.")
     st.stop()
 
@@ -34,7 +42,7 @@ session = st.session_state.session
 with st.sidebar:
     st.subheader("Workspace")
     st.caption("Employee Operations Copilot · Track B")
-    st.write("Course endpoint" if config["mode"] == "live" else "Offline handbook demo")
+    st.write(MODE_LABELS[config["mode"]])
     if st.button("New session", width="stretch"):
         st.session_state.session = uuid4().hex
         st.session_state.responses = []
@@ -58,6 +66,10 @@ def show_source_links(sources):
 def show_response(response, *, policy_result=False):
     status = response["status"]
     if status == "complete" and policy_result:
+        if response["answer_origin"] == "course_model":
+            st.caption("AI-generated handbook answer")
+        else:
+            st.caption("Prepared handbook answer")
         st.text(response["message"])
     elif status == "complete":
         st.success(response["message"])
@@ -123,6 +135,8 @@ with equipment:
 
 with handbook:
     st.subheader("Ask about a public policy")
+    if config["mode"] == "demo":
+        st.caption("Offline mode shows prepared guidance or source passages. Use course chat mode for AI-generated answers.")
     with st.form("handbook"):
         question = st.text_input("Question", placeholder="What should I attach if I lost a receipt?", max_chars=500)
         if st.form_submit_button("Search handbook", type="primary"):

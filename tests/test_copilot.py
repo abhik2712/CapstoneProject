@@ -84,10 +84,38 @@ class CopilotTests(unittest.TestCase):
         self.assertEqual(len(result["steps"]), MAX_STEPS)
         self.assertTrue(any(step.get("retry") for step in result["steps"]))
 
-    def test_public_policy_tool_returns_a_pinned_affidavit_citation(self):
-        result = self.agent.policy("receipt", "lost receipt affidavit")
+    def test_offline_policy_answers_the_missing_receipt_question(self):
+        result = self.agent.policy("receipt", "What should I attach if I lost a receipt ?")
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["answer_origin"], "prepared")
+        self.assertIn("Missing Receipt Affidavit", result["message"])
+        self.assertIn("PDF", result["message"])
+        self.assertEqual(len(result["sources"]), 1)
+        self.assertTrue(result["sources"][0]["url"].endswith("#L684-686"))
+
+    def test_other_offline_policy_search_still_returns_passages(self):
+        result = self.agent.policy("receipt", "What are the receipt requirements?")
         self.assertEqual(result["status"], "evidence")
-        self.assertTrue(any(source["url"].endswith("#L684-686") for source in result["sources"]))
+        self.assertTrue(result["sources"])
+
+    def test_chat_mode_generates_an_answer_using_bundled_passages(self):
+        def course_model(messages):
+            payload = json.loads(messages[1]["content"])
+            self.assertEqual(payload["question"], "What should I attach if I lost a receipt?")
+            affidavit = next(passage for passage in payload["handbook_passages"]
+                             if passage["citation"].endswith("#L684-686"))
+            return {"response": f"Attach the completed affidavit as a PDF [{affidavit['source_id']}].",
+                    "input_tokens": 120, "output_tokens": 15}
+
+        with patch("copilot.runtime.course_chat", return_value=course_model), patch(
+                "copilot.runtime.course_clients", side_effect=AssertionError("chat mode needs no hybrid index")):
+            agent = build_copilot(self.path, "chat")
+        result = agent.policy("chat", "What should I attach if I lost a receipt?")
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["answer_origin"], "course_model")
+        self.assertIn("completed affidavit as a PDF", result["message"])
+        self.assertTrue(result["sources"][0]["url"].endswith("#L684-686"))
+        self.assertIn("course_chat", [step["operation"] for step in result["steps"]])
 
     def test_external_actions_and_private_status_never_dispatch_a_tool(self):
         for question in ("Please submit my expense", "What is my claim status?"):

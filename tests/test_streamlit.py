@@ -14,6 +14,21 @@ APP = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 
 @unittest.skipUnless(AppTest, "Install requirements.txt to run Streamlit tests.")
 class StreamlitTests(unittest.TestCase):
+    def test_handbook_search_shows_prepared_answer_and_citation(self):
+        with TemporaryDirectory() as folder, patch.dict("os.environ", {
+            "CAPSTONE_STATE_DB": str(Path(folder) / "streamlit.sqlite"),
+            "CAPSTONE_MODE": "demo",
+        }):
+            app = AppTest.from_file(str(APP)).run()
+            next(field for field in app.text_input if field.label == "Question").set_value(
+                "What should I attach if I lost a receipt ?"
+            )
+            next(button for button in app.button if button.label == "Search handbook").click().run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any("Prepared handbook answer" in caption.value for caption in app.caption))
+            self.assertTrue(any("attach it as a PDF" in text.value for text in app.text))
+            self.assertTrue(any(source.label == "Handbook sources" for source in app.expander))
+
     def test_equipment_flow_and_trace(self):
         with TemporaryDirectory() as folder, patch.dict("os.environ", {
             "CAPSTONE_STATE_DB": str(Path(folder) / "streamlit.sqlite"),

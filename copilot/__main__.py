@@ -4,7 +4,7 @@ import json
 import sys
 from uuid import uuid4
 
-from .runtime import build_copilot, settings
+from .runtime import MODES, build_copilot, settings
 from .store import Store, checked_session
 
 DEMO_TURNS = (
@@ -18,7 +18,7 @@ def main():
     defaults = settings()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", default=defaults["path"])
-    parser.add_argument("--mode", choices=("demo", "live"), default=defaults["mode"])
+    parser.add_argument("--mode", choices=MODES, default=defaults["mode"])
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("demo", help="Run the three-turn equipment example with the bundled handbook passages.")
     equipment = commands.add_parser("equipment", help="Continue an equipment reimbursement session.")
