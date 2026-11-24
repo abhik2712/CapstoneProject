@@ -6,6 +6,146 @@ GenAI IITKGP Capstone Project · Track B
 
 The project explores how an employee assistant can answer questions from the GitLab Public Handbook, calculate eligible amounts, and prepare request drafts for human review. The main demo is equipment reimbursement; learning requests and onboarding provide additional policy workflows.
 
+## Run the equipment copilot
+
+Install Git and Python 3.11 or later. The offline demo runs from a fresh clone
+using the bundled GitLab handbook excerpts. Anyone can run it without a course
+account or API key.
+
+```sh
+git clone https://github.com/abhik2712/CapstoneProject.git
+cd CapstoneProject
+```
+
+### macOS and Linux
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+CAPSTONE_MODE=demo .venv/bin/python -m streamlit run streamlit_app.py
+```
+
+Use the Python executable inside `.venv` for both installation and launch.
+This also works with Homebrew Python.
+
+### Windows PowerShell
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:CAPSTONE_MODE = 'demo'
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+If your Windows installation uses `python` rather than `py`, use
+`python -m venv .venv` for the first command.
+
+### Try the demo
+
+Open <http://localhost:8501> and keep the terminal running.
+
+1. In **Equipment reimbursement**, click **Start $180 monitor example**.
+2. Choose **Annual equipment refresh** and click **Continue**. Select **Yes**
+   on the eligibility question and click **Continue** again.
+3. Enter `200` for the remaining balance. Click **Calculate** to see a
+   **USD 150.00** estimate, the handbook citations, and a draft for human review.
+4. Open **Run traces** to see the planner, executor, and critic steps for the
+   handbook search, calculator, and draft tools.
+5. In **Handbook search**, ask **What should I attach if I lost a receipt?**
+   The offline demo shows a **Prepared handbook answer** and the pinned
+   Missing Receipt Affidavit source.
+
+Press **Ctrl+C** in the terminal to stop the app. If port 8501 is already in
+use, append `--server.port 8502` to the launch command and open
+<http://localhost:8502>.
+
+### Run with Docker
+
+With Docker installed, run these commands from the repository root:
+
+```sh
+docker build -t capstone-copilot .
+docker run --rm -p 127.0.0.1:8501:8501 -v capstone-state:/app/runtime capstone-copilot
+```
+
+Open <http://localhost:8501> and follow the same demo steps.
+
+### Use the course model
+
+Use `CAPSTONE_MODE` to select how the app answers handbook questions.
+
+| Mode | Handbook search | Prerequisites |
+|---|---|---|
+| `demo` (default) | A prepared answer for the receipt example and matching passages for other supported searches | Bundled passages |
+| `chat` | AI-generated answers with citations from the bundled passages | Course chat URL, CA certificate and chat API key |
+| `live` | AI-generated answers with citations from the full hybrid index | Chat access, embeddings access and the completed index |
+
+To use `chat`, stop the running demo first. Use the chat base URL assigned to
+your course group, ending in `/v1`, and the CA certificate for that endpoint.
+Save the certificate outside the repository and replace the example URL and
+path below. Enter your assigned chat key at the prompt.
+
+**macOS and Linux (Bash or Zsh)**
+
+```bash
+export CAPSTONE_CHAT_BASE_URL='https://YOUR_ASSIGNED_HOST:PORT/v1'
+export CAPSTONE_CHAT_CA='/absolute/path/to/your-chat-ca.crt'
+printf 'Course chat API key: '
+read -rs CAPSTONE_CHAT_API_KEY
+export CAPSTONE_CHAT_API_KEY
+CAPSTONE_MODE=chat .venv/bin/python -m streamlit run streamlit_app.py
+```
+
+**Windows PowerShell**
+
+```powershell
+$env:CAPSTONE_CHAT_BASE_URL = 'https://YOUR_ASSIGNED_HOST:PORT/v1'
+$env:CAPSTONE_CHAT_CA = 'C:\path\to\your-chat-ca.crt'
+$env:CAPSTONE_CHAT_API_KEY = [System.Net.NetworkCredential]::new('', (Read-Host 'Course chat API key' -AsSecureString)).Password
+$env:CAPSTONE_MODE = 'chat'
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+Ask the missing-receipt question again. **AI-generated handbook answer**
+indicates a response from the course model. The app checks that citation IDs
+come from the retrieved passages. The equipment workflow uses the same pinned
+policy passages in every mode.
+
+For `live` mode, [prepare the full handbook index](#reproduce-locally) or
+obtain the completed SQLite index from the team. The default path is
+`data/handbook-embeddings.sqlite`. Set `CAPSTONE_INDEX` for another path.
+Set `CAPSTONE_EMBED_BASE_URL`, `CAPSTONE_EMBED_CA`, and
+`CAPSTONE_EMBED_API_KEY`, or point `CAPSTONE_EMBED_ACCESS_ZIP` to your course
+embeddings archive. Set `CAPSTONE_TOKENIZER` if using a local copy of the
+pinned tokenizer. Then use `CAPSTONE_MODE=live` in the launch command for your
+shell. Keep keys and access archives outside Git.
+
+### Command line and tests
+
+From the repository root, use the virtual environment created above:
+
+```sh
+.venv/bin/python -m copilot demo
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+On Windows, use `.\.venv\Scripts\python.exe` in place of `.venv/bin/python`.
+The CLI demo prints the USD 150 estimate, citations, and a session ID. Pass
+that ID to `python -m copilot traces SESSION_ID`, using the virtual environment
+Python for your shell, to inspect the recorded steps.
+
+The CLI and Streamlit store typed equipment facts in `runtime/copilot.sqlite`.
+Use `CAPSTONE_STATE_DB` to select another path. Traces record the stage,
+operation, outcome, retries, latency, and reported model token counts when
+available. Set `CAPSTONE_OTEL_CONSOLE=1` to export OpenTelemetry spans to
+stderr. The app limits requests per session and instance and caches the
+pinned equipment lookup in memory.
+
+The tests cover state persistence, calculation limits, draft behavior,
+refusals, malformed inputs, retries, rate and step limits, citation validation,
+and the Streamlit workflow. The chat integration test uses a test double.
+Full agent accuracy and safety evaluation on the frozen set remains pending.
+
 ## Progress
 
 - **Scope and architecture:** confirmed the main workflows and designed a planner–executor–critic loop with handbook search, an expense calculator, and a request-draft tool.
@@ -15,96 +155,6 @@ The project explores how an employee assistant can answer questions from the Git
 - **Retrieval and RAG:** indexed all 522 documents, compared four search methods on the frozen set, and scored 82 cited responses.
 - **Agent workflow:** the equipment workflow uses a planner, an executor, and a critic with handbook search, an expense calculator, and a request-draft tool. A Streamlit app shows real execution traces.
 - **Next:** score the agent against the frozen evaluation set, extend workflow coverage, and prepare the final report. Submission is scheduled for 27 November 2026.
-
-## Run the equipment copilot
-
-Run the demo from a fresh clone with Python 3.11+:
-
-```sh
-python -m copilot demo
-```
-
-The CLI runs three turns using pinned public handbook excerpts and SQLite.
-It starts with a standard USD 180 monitor and USD 30 in credits, asks which
-allowance applies, and uses the employee's eligibility confirmation and
-remaining balance to produce a USD 150 estimate and a draft for review.
-The output includes the source links and a session ID. Use
-`python -m copilot traces SESSION_ID` to inspect the recorded steps. Use
-`python -m copilot equipment SESSION_ID '{"remaining":"200"}'` to continue
-an existing session from the terminal.
-
-### Streamlit and Docker
-
-```sh
-python -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m streamlit run streamlit_app.py
-```
-
-Open <http://localhost:8501>. Choose **Start $180 monitor example**, then
-**Annual equipment refresh** and **Yes**. Enter `200` for the remaining
-balance, calculate the claim, and open **Run traces**. The completed run
-shows three planner/executor/critic cycles and source links to the pinned
-expense policy. The app drafts text for employee review. It has no connection
-to Navan or to private employee records.
-
-```sh
-docker build -t capstone-copilot .
-docker run --rm -p 127.0.0.1:8501:8501 -v capstone-state:/app/runtime capstone-copilot
-```
-
-Both the CLI and Streamlit persist typed equipment facts in
-`runtime/copilot.sqlite` by default. Set `CAPSTONE_STATE_DB` to override
-the path. Rate limits apply per session and across the local instance.
-The fixed equipment policy lookup is cached in memory. Traces record stage,
-operation, outcome, retries, latency, and reported model token counts when
-available. They omit free-text questions and draft text. Set
-`CAPSTONE_OTEL_CONSOLE=1` to export OpenTelemetry spans to stderr.
-
-### Handbook answers and the course model
-
-The default offline demo uses the bundled handbook passages. It gives a
-prepared, cited answer to “What should I attach if I lost a receipt?” and
-shows matching sources for other supported searches.
-
-To generate answers with the course model using the bundled passages, set
-the assigned `CAPSTONE_CHAT_BASE_URL` (the HTTPS URL ending in `/v1`),
-`CAPSTONE_CHAT_CA` (the CA certificate path), and `CAPSTONE_CHAT_API_KEY`.
-Then start Streamlit in chat mode:
-
-```sh
-CAPSTONE_MODE=chat .venv/bin/python -m streamlit run streamlit_app.py
-```
-
-The same mode is available in the CLI:
-
-```sh
-python -m copilot --mode chat policy demo "What should I attach if I lost a receipt?"
-```
-
-Use `CAPSTONE_MODE=live` for the full handbook. This mode also needs the
-embeddings settings and hybrid index described under
-[Reproduce locally](#reproduce-locally). Use `CAPSTONE_INDEX` to override
-`data/handbook-embeddings.sqlite` and `CAPSTONE_TOKENIZER` to use an
-existing pinned tokenizer. `CAPSTONE_EMBED_ACCESS_ZIP` can supply the
-embedding settings from the course archive.
-
-Both generation modes use the assigned model and require citation IDs
-from the retrieved evidence. The equipment workflow uses the same pinned
-policy passages in every mode.
-
-### Check the implementation
-
-```sh
-python -m unittest discover -s tests -v
-```
-
-The tests cover state persistence, calculation limits, draft behavior,
-refusals, malformed inputs, retries, rate and step limits, and citation
-validation. With the dependencies installed, they also drive the Streamlit
-workflow. The live-answer check uses a test double for the chat endpoint.
-Full agent accuracy and safety evaluation on the frozen set remains pending.
 
 ## Closed-book prompting baseline
 
@@ -184,20 +234,28 @@ The pinned handbook, its inventory, the SQLite index, the frozen question and an
 
 Use Python 3.11 or later. From the repository root, place the pinned Markdown in `data/handbook/`, the matching inventory at `data/handbook-inventory.jsonl`, and the frozen cases at `data/evaluation-set/evaluation.jsonl`.
 
-Create a Python environment and install `tokenizers==0.22.2` for semantic search. The embedding scripts download the pinned public BGE tokenizer, or accept a matching local copy via `--tokenizer`. Set `CAPSTONE_EMBED_BASE_URL`, `CAPSTONE_EMBED_CA`, `CAPSTONE_CHAT_BASE_URL`, and `CAPSTONE_CHAT_CA` using your assigned course settings. The scripts prompt for keys without echoing them, or read `CAPSTONE_EMBED_API_KEY` and `CAPSTONE_CHAT_API_KEY` from the environment.
+Install the dependencies using the setup above. The embedding scripts download
+the pinned public BGE tokenizer or accept a matching local copy via
+`--tokenizer`. Set `CAPSTONE_EMBED_BASE_URL`, `CAPSTONE_EMBED_CA`,
+`CAPSTONE_CHAT_BASE_URL`, and `CAPSTONE_CHAT_CA` using your assigned course
+settings. The scripts prompt for keys without echoing them or read
+`CAPSTONE_EMBED_API_KEY` and `CAPSTONE_CHAT_API_KEY` from the environment.
 
-```
+The examples use the macOS/Linux virtual environment path. In PowerShell,
+replace `.venv/bin/python` with `.\.venv\Scripts\python.exe`.
+
+```sh
 # Closed-book smoke check
-python3 -B baseline/run.py --smoke-only --output results/smoke.jsonl
+.venv/bin/python -B baseline/run.py --smoke-only --output results/smoke.jsonl
 
 # Build or resume the embedding index, then search
-python3 -B retrieval/build_embeddings.py
-python3 -B retrieval/search_hybrid.py "How should I handle a lost expense receipt?"
+.venv/bin/python -B retrieval/build_embeddings.py
+.venv/bin/python -B retrieval/search_hybrid.py "How should I handle a lost expense receipt?"
 
 # Evaluate retrieval and generate cited answers
-python3 -B retrieval/evaluate_rag.py retrieve
-python3 -B retrieval/evaluate_rag.py report
-python3 -B retrieval/evaluate_rag.py answer
+.venv/bin/python -B retrieval/evaluate_rag.py retrieve
+.venv/bin/python -B retrieval/evaluate_rag.py report
+.venv/bin/python -B retrieval/evaluate_rag.py answer
 ```
 
 Use a new results filename for a fresh retrieval run; the answer stage resumes only when the prior results match its inputs. To run the full closed-book baseline, omit `--smoke-only` and choose a new output path. Keep course credentials, certificates, and access archives outside the repository.
