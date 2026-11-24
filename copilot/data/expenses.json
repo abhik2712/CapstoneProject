@@ -1,0 +1,80 @@
+[
+  {
+    "chunk_id": "personal_payment",
+    "document_id": "finance-expenses",
+    "title": "GitLab Expenses",
+    "headings": [
+      "Personal credits and gift cards"
+    ],
+    "line_start": 64,
+    "line_end": 65,
+    "citation": "https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L64-65",
+    "source_commit": "8fce82673398dbfad74c667e7b35eb75d101d55d",
+    "text": "- Personal credits and gift cards: GitLab will reimburse only the actual out-of-pocket amount paid by the employee. If personal credits, gift cards, rewards points, or other discounts are applied to a business purchase, reimbursement will be limited to the net amount charged to the employee's personal payment method.\nExample: An employee purchases a $100 monitor and applies a $50 gift card. GitLab will reimburse $50 (the amount actually paid), not the pre-discount price of $100."
+  },
+  {
+    "chunk_id": "equipment",
+    "document_id": "finance-expenses",
+    "title": "GitLab Expenses",
+    "headings": [
+      "Equipment allowances and eligible items"
+    ],
+    "line_start": 416,
+    "line_end": 423,
+    "citation": "https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L416-423",
+    "source_commit": "8fce82673398dbfad74c667e7b35eb75d101d55d",
+    "text": "- These amounts were set after a thorough analysis and review of Team Members' expense data during the previous two years and benchmarked with other remote companies. Anything over this amount will be at the expense of the Team Member and no exceptions will be made.\n- As you onboard and start your GitLab journey, new hires will receive a 1,500 USD (or equivalent local currency) stipend to help you towards setting up your home office in your first year. Purchase the items you need using your own funds and submit a claim in Navan for reimbursement. Select the Expense Type: Work From Home – New Hire Stipend.\n- Existing Team Members will get a yearly refresh of 500 USD (or equivalent local currency) to purchase upgrades, replacements, or enhancements to your home office setup. This only applies to Team Members who have been employed the entire previous calendar year. This excludes laptops - please connect with the IT team if you require a replacement laptop.\n- We want you to set up your office the way you want it. Although we don't want to put any restrictions regarding which office equipment you may purchase, we would like to outline what is covered under the term Office Equipment.\n- What's included - Essential items which you will need to ensure you are able to perform your role in GitLab should include chair, desk, monitor, Laptop (provided), headset, external mic, external keyboard and external mouse.\n- Further to this, items like additional monitors, laptop stand, external webcam, supplementary lighting, laptop bag/case, can also be considered and expensed using the Stipend/Allowance.\n- Any items outside this will fall under an exception to the policy and will require approval prior to purchase via the Compass process - `Expenses -> Home Office Equipment` page of [Compass](/handbook/eta/corporate-it/compass/compass-guide/).\n- In addition the following items are not reimbursable: Phones, watches, smart speakers, smart TVs/smart monitors, walking pads/treadmills,tablets, book shelves, shelves, Cabinets, other furniture, wifi Mesh, Routers, Extenders/Boosters."
+  },
+  {
+    "chunk_id": "refresh",
+    "document_id": "finance-expenses",
+    "title": "GitLab Expenses",
+    "headings": [
+      "Annual refresh and Navan"
+    ],
+    "line_start": 432,
+    "line_end": 437,
+    "citation": "https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L432-437",
+    "source_commit": "8fce82673398dbfad74c667e7b35eb75d101d55d",
+    "text": "##### Existing Team Members- 500 USD (or equivalent local currency) Refresh Guidelines\n\n- This is a yearly refresh amount. It will reset at the beginning of each calendar year (January 1 to December 31).\n- The Navan Virtual Card cannot be used for the yearly refresh. Team Members should use their own method of payment and submit their expenses in Navan.\n- Any unused funds will not roll over to the next year.\n- Team Members hired within the previous calendar year are not eligible. For example, a Team Member who started 2023-05-10 will get their first refresh amount on 2025-01-01."
+  },
+  {
+    "chunk_id": "stipend",
+    "document_id": "finance-expenses",
+    "title": "GitLab Expenses",
+    "headings": [
+      "New-hire stipend and Navan"
+    ],
+    "line_start": 427,
+    "line_end": 430,
+    "citation": "https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L427-430",
+    "source_commit": "8fce82673398dbfad74c667e7b35eb75d101d55d",
+    "text": "##### New Hires- 1,500 USD (or equivalent local currency) Guidelines\n\n- Purchase the items you need using your own funds and submit a claim in Navan for reimbursement. Select the Expense Type: Work From Home – New Hire Stipend.\n- Please ensure any equipment purchased is compliant with policy. See below for listing."
+  },
+  {
+    "chunk_id": "receipts",
+    "document_id": "finance-expenses",
+    "title": "GitLab Expenses",
+    "headings": [
+      "Receipt requirements"
+    ],
+    "line_start": 51,
+    "line_end": 53,
+    "citation": "https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L51-53",
+    "source_commit": "8fce82673398dbfad74c667e7b35eb75d101d55d",
+    "text": "## 3. General Guidelines\n\n- Team members should submit receipts for every business expense. For Non-US Team Members, receipts are required for all expenses. US Team Members are required to only submit receipts for any expenses over $50 USD.  Receipts must contain vendor name, date of purchase, listing of what was purchased, and contains a full breakout of the subtotal and tax amounts. Snapshot from phone/computer screen of Applications, Card/Bank Statements are not an acceptable form of receipt."
+  },
+  {
+    "chunk_id": "affidavit",
+    "document_id": "finance-expenses",
+    "title": "GitLab Expenses",
+    "headings": [
+      "Missing Receipt Affidavit"
+    ],
+    "line_start": 684,
+    "line_end": 686,
+    "citation": "https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/8fce82673398dbfad74c667e7b35eb75d101d55d/content/handbook/finance/expenses.md#L684-686",
+    "source_commit": "8fce82673398dbfad74c667e7b35eb75d101d55d",
+    "text": "### 4.3 Missing Receipt Affidavit\n\nIf a Team Member is missing a receipt, a Missing Receipt Affidavit will need to be completed and attached to the expense when submitted. Missing Receipt Affidavit located [here](https://docs.google.com/spreadsheets/d/179q0Wos-CemLCe1uxgMpZ80JukSC4KYx8JICFgHzN0I/edit?usp=sharing) (please ensure to make a copy). When attaching the receipt affidavit, the Team Member should attach the document as a PDF."
+  }
+]
