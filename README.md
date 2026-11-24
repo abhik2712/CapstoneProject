@@ -13,7 +13,82 @@ The project explores how an employee assistant can answer questions from the Git
 - **Evaluation:** froze 80 cases (82 turns) with reference answers, pass criteria, and 173 evidence excerpts checked against exact source lines. Categories cover expenses, learning, onboarding, multiple documents, and missing or unsupported requests.
 - **Prompting baseline:** verified chat access and captured all 246 planned responses using the three prompts below. The embeddings endpoint was checked separately. All 246 responses were scored against the frozen rubric.
 - **Retrieval and RAG:** indexed all 522 documents, compared four search methods on the frozen set, and scored 82 cited responses.
-- **Next:** improve passage selection and test narrower checks for clarification and external actions. The planner, executor, critic, and tools are still planned. Submission is scheduled for 27 November 2026.
+- **Agent workflow:** the equipment workflow uses a planner, an executor, and a critic with handbook search, an expense calculator, and a request-draft tool. A Streamlit app shows real execution traces.
+- **Next:** score the agent against the frozen evaluation set, extend workflow coverage, and prepare the final report. Submission is scheduled for 27 November 2026.
+
+## Run the equipment copilot
+
+Run the demo from a fresh clone with Python 3.11+:
+
+```sh
+python -m copilot demo
+```
+
+The CLI runs three turns using pinned public handbook excerpts and SQLite.
+It starts with a standard USD 180 monitor and USD 30 in credits, asks which
+allowance applies, and uses the employee's eligibility confirmation and
+remaining balance to produce a USD 150 estimate and a draft for review.
+The output includes the source links and a session ID. Use
+`python -m copilot traces SESSION_ID` to inspect the recorded steps. Use
+`python -m copilot equipment SESSION_ID '{"remaining":"200"}'` to continue
+an existing session from the terminal.
+
+### Streamlit and Docker
+
+```sh
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m streamlit run streamlit_app.py
+```
+
+Open <http://localhost:8501>. Choose **Start $180 monitor example**, then
+**Annual equipment refresh** and **Yes**. Enter `200` for the remaining
+balance, calculate the claim, and open **Run traces**. The completed run
+shows three planner/executor/critic cycles and source links to the pinned
+expense policy. The app drafts text for employee review. It has no connection
+to Navan or to private employee records.
+
+```sh
+docker build -t capstone-copilot .
+docker run --rm -p 127.0.0.1:8501:8501 -v capstone-state:/app/runtime capstone-copilot
+```
+
+Both the CLI and Streamlit persist typed equipment facts in
+`runtime/copilot.sqlite` by default. Set `CAPSTONE_STATE_DB` to override
+the path. Rate limits apply per session and across the local instance.
+The fixed equipment policy lookup is cached in memory. Traces record stage,
+operation, outcome, retries, latency, and reported model token counts when
+available. They omit free-text questions and draft text. Set
+`CAPSTONE_OTEL_CONSOLE=1` to export OpenTelemetry spans to stderr.
+
+### Course-endpoint mode
+
+The equipment workflow uses the same fixed, citable handbook passages in
+both modes. With `CAPSTONE_MODE=live`, general handbook questions use the
+project's hybrid index and the assigned model to produce cited answers.
+The critic requires citation IDs from the retrieved evidence. Citation
+validity alone does not establish that each claim is supported.
+
+Set the course API URLs, keys, and CA certificate paths listed under
+[Reproduce locally](#reproduce-locally). Use `CAPSTONE_INDEX` to override
+`data/handbook-embeddings.sqlite`, or `CAPSTONE_TOKENIZER` to use an
+existing pinned tokenizer. `CAPSTONE_EMBED_ACCESS_ZIP` can supply the
+embedding settings from the course archive. In the default demo mode,
+the handbook search displays passages from the small bundled BM25 index
+and runs without credentials.
+
+### Check the implementation
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+The tests cover state persistence, calculation limits, draft behavior,
+refusals, malformed inputs, retries, rate and step limits, and citation
+validation. With the dependencies installed, they also drive the Streamlit
+workflow. The live-answer check uses a test double for the chat endpoint.
+Full agent accuracy and safety evaluation on the frozen set remains pending.
 
 ## Closed-book prompting baseline
 
